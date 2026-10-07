@@ -32,13 +32,26 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Build debug APK
-        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Find project root and build
+        run: |
+          set -e
+          ls -la
+          FOUND=$(find . -name "settings.gradle.kts" -not -path "*/.git/*" | head -1 || true)
+          if [ -z "$FOUND" ]; then
+            echo "ERROR: settings.gradle.kts not found in repo"
+            find . -maxdepth 3 -type f | head -50
+            exit 1
+          fi
+          ROOT=$(dirname "$FOUND")
+          echo "Project root: $ROOT"
+          cd "$ROOT"
+          gradle :app:assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: PhoneLink-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: |
+            **/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
